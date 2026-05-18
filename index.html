@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Daily Life Phrase Book</title>
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#0EA5E9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Daily Phrases" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --sky: #0EA5E9; --sky-dark: #0284C7; --sky-light: #BAE6FD; --sky-pale: #F0F9FF;
+      --palm: #22C55E; --palm-dark: #16A34A; --palm-light: #BBF7D0; --palm-pale: #F0FDF4;
+      --sand: #FDFAF5; --sand-dark: #F5EFE0;
+      --white: #FFFFFF;
+      --gray-100: #F8FAFC; --gray-200: #E2E8F0; --gray-400: #94A3B8; --gray-600: #64748B;
+      --text: #1E293B; --text-light: #475569;
+      --es-accent: #DC2626; --es-bg: #FFF5F5; --es-border: #FECACA;
+      --radius: 12px; --radius-sm: 8px;
+      --shadow: 0 1px 8px rgba(14,165,233,.10);
+      --shadow-lg: 0 4px 24px rgba(14,165,233,.15);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--sand); color: var(--text); min-height: 100vh; }
+
+    /* ── Header ── */
+    .header { background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 60%, #0369A1 100%); color: #fff; padding: 20px 24px 16px; box-shadow: 0 2px 20px rgba(14,165,233,.30); }
+    .header-inner { max-width: 960px; margin: 0 auto; }
+    .header-top { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+    .header-icon { width: 46px; height: 46px; background: rgba(255,255,255,.22); border: 2px solid rgba(255,255,255,.35); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+    .header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -.3px; }
+    .daily-badge { font-size: .62rem; background: rgba(255,255,255,.22); color: #fff; border-radius: 10px; padding: 2px 9px; font-weight: 700; letter-spacing: .5px; margin-left: 6px; vertical-align: middle; border: 1px solid rgba(255,255,255,.30); }
+    .header-sub { font-size: .78rem; color: rgba(255,255,255,.85); margin-left: 60px; margin-top: 2px; }
+    .voice-indicator { font-size: .7rem; color: rgba(255,255,255,.7); margin-left: 60px; margin-top: 2px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+
+    .main { max-width: 960px; margin: 0 auto; padding: 20px 16px 40px; }
+
+    /* ── 翻訳パネル ── */
+    .translate-panel { background: var(--white); border-radius: 16px; box-shadow: var(--shadow-lg); overflow: hidden; margin-bottom: 24px; border: 1.5px solid var(--sky-light); }
+    .translate-panel-header { background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%); padding: 12px 18px; display: flex; align-items: center; gap: 10px; }
+    .translate-panel-header-icon { width: 28px; height: 28px; background: rgba(255,255,255,.22); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .translate-panel-title { font-size: .9rem; font-weight: 700; color: #fff; }
+    .translate-body { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; }
+    @media (max-width: 620px) {
+      .translate-body { grid-template-columns: 1fr; }
+      .translate-divider { height: 36px; border-left: none; border-right: none; border-top: 1px solid var(--gray-200); border-bottom: 1px solid var(--gray-200); }
+    }
+    .translate-src { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .translate-lang-label { font-size: .7rem; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .8px; }
+    .translate-textarea { flex: 1; border: none; outline: none; resize: none; font-size: .96rem; line-height: 1.6; color: var(--text); font-family: inherit; min-height: 90px; background: transparent; }
+    .translate-textarea::placeholder { color: var(--gray-400); }
+    .translate-src-footer { display: flex; align-items: center; justify-content: space-between; }
+    .translate-clear { background: none; border: none; cursor: pointer; font-size: .75rem; color: var(--gray-400); padding: 4px 8px; border-radius: 6px; }
+    .translate-clear:hover { color: var(--es-accent); background: var(--es-bg); }
+    .char-count { font-size: .7rem; color: var(--gray-400); }
+    .translate-divider { display: flex; align-items: flex-start; justify-content: center; padding: 20px 4px 0; background: var(--gray-100); border-left: 1px solid var(--gray-200); border-right: 1px solid var(--gray-200); }
+    .translate-arrow-icon { width: 28px; height: 28px; border-radius: 50%; background: var(--sky); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; }
+    .translate-dst { display: flex; flex-direction: column; }
+    .lang-block { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+    .lang-block-es { background: var(--es-bg); border-top: 1.5px dashed var(--es-border); }
+    .lang-flag-label { font-size: .72rem; font-weight: 700; letter-spacing: .7px; display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
+    .lang-flag-label.en { color: var(--sky-dark); }
+    .lang-flag-label.es { color: var(--es-accent); }
+    .translate-result-text { font-size: 1.05rem; font-weight: 600; color: var(--sky-dark); line-height: 1.55; min-height: 50px; white-space: pre-wrap; }
+    .translate-result-text.placeholder { font-weight: 400; color: var(--gray-400); font-size: .88rem; min-height: 40px; }
+    .translate-result-text.loading { color: var(--gray-400); font-size: .88rem; font-style: italic; display: flex; align-items: center; gap: 8px; }
+    .translate-result-text.error { color: var(--es-accent); font-size: .85rem; font-weight: 400; }
+    .translate-result-text.es-text { color: #9B1C1C; }
+    .translate-ipa-row { display: flex; align-items: center; gap: 8px; min-height: 20px; }
+    .translate-ipa-text { font-size: .82rem; color: #5c6e8a; font-family: 'Georgia','Times New Roman',serif; letter-spacing: .3px; }
+    .translate-ipa-text.es { color: #8b4513; }
+    .translate-ipa-loading { font-size: .75rem; color: var(--gray-400); font-style: italic; display: flex; align-items: center; gap: 6px; }
+    .spinner-sm { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--gray-200); border-top-color: var(--sky); animation: spin .7s linear infinite; flex-shrink: 0; }
+    .lang-speak-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+    .speak-big-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border: none; border-radius: 8px; background: var(--sky); color: #fff; cursor: pointer; font-size: .82rem; font-weight: 600; transition: background .15s; }
+    .speak-big-btn:hover { background: var(--sky-dark); }
+    .speak-big-btn:disabled { opacity: .4; cursor: default; }
+    .speak-big-btn.speaking { background: var(--palm); color: #fff; animation: pulse 1s infinite; }
+    .speak-big-btn.es-btn { background: var(--es-accent); }
+    .speak-big-btn.es-btn:hover { background: #B91C1C; }
+    .speak-big-btn.es-btn.speaking { background: var(--palm); }
+    .translate-save-row { padding: 10px 16px 14px; border-top: 1px solid var(--gray-200); display: flex; justify-content: flex-end; }
+    .save-translate-btn { display: flex; align-items: center; gap: 5px; padding: 9px 18px; border: 1.5px solid var(--sky); border-radius: 8px; background: var(--sky-pale); cursor: pointer; font-size: .85rem; font-weight: 600; color: var(--sky-dark); }
+    .save-translate-btn:hover { background: var(--sky-light); }
+    .save-translate-btn:disabled { opacity: .4; cursor: default; }
+    .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--gray-200); border-top-color: var(--sky); animation: spin .7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toolbar ── */
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .search-wrap { flex: 1 1 220px; position: relative; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--gray-400); font-size: 15px; pointer-events: none; }
+    .search-input { width: 100%; padding: 10px 12px 10px 36px; border: 1.5px solid var(--gray-200); border-radius: var(--radius); font-size: .92rem; background: var(--white); outline: none; transition: border-color .15s; }
+    .search-input:focus { border-color: var(--sky); }
+    .add-btn { padding: 9px 18px; background: var(--sky); border: none; border-radius: var(--radius); font-size: .88rem; font-weight: 600; cursor: pointer; color: #fff; white-space: nowrap; }
+    .add-btn:hover { background: var(--sky-dark); }
+
+    /* ── Filter row ── */
+    .filter-row { display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; scrollbar-width: none; align-items: center; margin-bottom: 14px; }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-btn { padding: 7px 14px; border: 1.5px solid var(--gray-200); border-radius: 20px; background: var(--white); font-size: .82rem; cursor: pointer; transition: all .15s; white-space: nowrap; color: var(--gray-600); display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .filter-btn:hover { border-color: var(--sky); color: var(--sky-dark); }
+    .filter-btn.active { background: var(--sky); border-color: var(--sky); color: #fff; }
+    .filter-btn .del-cat { font-size: .65rem; opacity: .6; margin-left: 2px; border: none; background: none; cursor: pointer; padding: 0 2px; color: inherit; }
+    .filter-btn .del-cat:hover { opacity: 1; }
+    .add-cat-btn { padding: 7px 12px; border: 1.5px dashed var(--gray-400); border-radius: 20px; background: transparent; font-size: .82rem; cursor: pointer; color: var(--gray-600); white-space: nowrap; flex-shrink: 0; }
+    .add-cat-btn:hover { border-color: var(--sky); color: var(--sky-dark); }
+
+    .stats { font-size: .78rem; color: var(--gray-600); margin-bottom: 12px; }
+
+    /* ── Cards ── */
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px,1fr)); gap: 14px; }
+    .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 16px 0; cursor: pointer; transition: transform .15s, box-shadow .15s; border-top: 3px solid transparent; position: relative; display: flex; flex-direction: column; }
+    .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .card-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: .7rem; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+    .card-phrase { font-size: 1rem; font-weight: 600; color: var(--text); line-height: 1.35; margin-bottom: 3px; padding-right: 62px; }
+    .card-ipa { font-size: .75rem; color: #5c6e8a; font-family: 'Georgia','Times New Roman',serif; margin-bottom: 2px; }
+    .card-reading { font-size: .78rem; color: var(--gray-400); margin-bottom: 6px; }
+    .card-es-block { margin: 6px 0 4px; padding: 6px 10px; background: var(--es-bg); border-left: 3px solid var(--es-border); border-radius: 0 6px 6px 0; }
+    .card-phrase-es { font-size: .9rem; font-weight: 600; color: #9B1C1C; line-height: 1.35; }
+    .card-ipa-es { font-size: .72rem; color: #8b4513; font-family: 'Georgia','Times New Roman',serif; margin-top: 2px; }
+    .card-meaning { font-size: .86rem; color: var(--gray-600); line-height: 1.5; border-top: 1px solid var(--gray-200); padding-top: 8px; margin-top: 4px; }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .tag { font-size: .68rem; padding: 2px 7px; background: var(--sky-pale); color: var(--sky-dark); border-radius: 10px; }
+    .card-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
+    .card:hover .card-actions { opacity: 1; }
+    .icon-btn { width: 36px; height: 36px; border: none; background: var(--gray-100); border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: background .12s; }
+    .icon-btn:hover { background: var(--gray-200); }
+    .icon-btn.delete:hover { background: var(--es-bg); }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; border-top: 1px solid var(--gray-200); padding: 8px 0 10px; gap: 6px; }
+    .card-speak-group { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+    .speak-btn { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1.5px solid var(--gray-200); border-radius: 20px; background: var(--white); cursor: pointer; font-size: .74rem; color: var(--gray-600); transition: all .15s; }
+    .speak-btn:hover { border-color: var(--sky); color: var(--sky-dark); background: var(--sky-pale); }
+    .speak-btn.speaking { border-color: var(--palm); color: var(--palm-dark); background: var(--palm-pale); animation: pulse 1s infinite; }
+    .speak-btn.es { border-color: var(--es-border); color: var(--es-accent); }
+    .speak-btn.es:hover { border-color: var(--es-accent); background: var(--es-bg); }
+    .speak-btn.es.speaking { border-color: var(--palm); color: var(--palm-dark); background: var(--palm-pale); animation: pulse 1s infinite; }
+    .word-toggle-btn { display: flex; align-items: center; gap: 4px; padding: 5px 10px; border: 1.5px solid var(--gray-200); border-radius: 20px; background: var(--white); cursor: pointer; font-size: .74rem; color: var(--gray-600); transition: all .15s; flex-shrink: 0; }
+    .word-toggle-btn:hover { border-color: var(--sky); color: var(--sky-dark); }
+    .word-toggle-btn.open { border-color: var(--sky); color: var(--sky-dark); background: var(--sky-pale); }
+
+    /* ── Word breakdown ── */
+    .word-breakdown { padding: 10px 0 12px; border-top: 1px solid var(--gray-200); }
+    .word-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .word-chip { display: inline-flex; flex-direction: column; padding: 6px 10px; border: 1.5px solid var(--gray-200); border-radius: 8px; background: var(--gray-100); cursor: pointer; transition: all .15s; }
+    .word-chip:hover { border-color: var(--sky); background: var(--sky-pale); }
+    .word-chip.speaking { border-color: var(--palm); background: var(--palm-pale); }
+    .word-chip.es { border-color: var(--es-border); background: var(--es-bg); }
+    .word-chip.es:hover { border-color: var(--es-accent); background: #FFE4E4; }
+    .word-chip.es.speaking { border-color: var(--palm); background: var(--palm-pale); }
+    .word-chip.es .wc-en { color: #9B1C1C; }
+    .word-breakdown-label { font-size: .68rem; font-weight: 700; letter-spacing: .6px; margin: 8px 0 4px; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+    .word-breakdown-label.en { color: var(--sky-dark); background: var(--sky-pale); }
+    .word-breakdown-label.es { color: var(--es-accent); background: var(--es-bg); border: 1px solid var(--es-border); }
+    .wt-word-es { font-weight: 600; color: #9B1C1C; }
+    .wt-speak-es { background: var(--es-bg) !important; }
+    .wt-speak-es:hover { background: #FFD0D0 !important; }
+    .wc-en { font-size: .82rem; font-weight: 600; color: var(--text); }
+    .wc-read { font-size: .65rem; color: var(--gray-400); font-style: italic; }
+    .wc-ja { font-size: .7rem; color: var(--gray-600); margin-top: 2px; }
+    .wc-note { font-size: .62rem; color: var(--gray-400); }
+
+    /* ── Modals ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+    .modal { background: var(--white); border-radius: 16px; width: 100%; max-width: 540px; box-shadow: var(--shadow-lg); overflow: hidden; max-height: 92vh; display: flex; flex-direction: column; }
+    .modal-sm { max-width: 360px; }
+    .modal-header { background: var(--sky); color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .modal-header h2 { font-size: 1rem; font-weight: 600; }
+    .modal-close { background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; opacity: .8; line-height: 1; }
+    .modal-close:hover { opacity: 1; }
+    .modal-body { padding: 20px; overflow-y: auto; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: .8rem; font-weight: 600; color: var(--gray-600); margin-bottom: 4px; }
+    .form-control { width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: .9rem; outline: none; transition: border-color .15s; font-family: inherit; }
+    .form-control:focus { border-color: var(--sky); }
+    select.form-control { cursor: pointer; }
+    textarea.form-control { resize: vertical; min-height: 70px; }
+    .modal-footer { padding: 12px 20px 20px; display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+    .btn-cancel { padding: 8px 18px; border: 1.5px solid var(--gray-200); border-radius: 8px; background: var(--white); cursor: pointer; font-size: .88rem; color: var(--gray-600); }
+    .btn-cancel:hover { border-color: var(--gray-400); }
+    .btn-save { padding: 8px 22px; background: var(--sky); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: .88rem; font-weight: 600; }
+    .btn-save:hover { background: var(--sky-dark); }
+    .form-section-label { font-size: .72rem; font-weight: 700; letter-spacing: .7px; padding: 8px 10px 6px; border-radius: 6px; margin: 16px 0 10px; }
+    .form-section-label.en { background: var(--sky-pale); color: var(--sky-dark); }
+    .form-section-label.es { background: var(--es-bg); color: var(--es-accent); border: 1px solid var(--es-border); }
+    .color-swatch-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform .1s; }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.selected { border-color: var(--text); transform: scale(1.15); }
+
+    /* ── Detail modal ── */
+    .detail-phrase { font-size: 1.2rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .detail-ipa { font-size: .85rem; color: #5c6e8a; font-family: 'Georgia','Times New Roman',serif; margin-bottom: 4px; }
+    .detail-reading { font-size: .85rem; color: var(--gray-400); margin-bottom: 12px; }
+    .detail-speak-row { margin-bottom: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .detail-speak-btn { display: flex; align-items: center; gap: 6px; padding: 9px 18px; border: none; border-radius: 8px; background: var(--sky); color: #fff; cursor: pointer; font-size: .88rem; font-weight: 600; }
+    .detail-speak-btn:hover { background: var(--sky-dark); }
+    .detail-speak-btn.speaking { background: var(--palm); animation: pulse 1s infinite; }
+    .detail-speak-btn.es-btn { background: var(--es-accent); }
+    .detail-speak-btn.es-btn:hover { background: #B91C1C; }
+    .detail-es-block { background: var(--es-bg); border: 1.5px solid var(--es-border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+    .detail-es-phrase { font-size: 1.1rem; font-weight: 700; color: #9B1C1C; margin-bottom: 3px; }
+    .detail-es-ipa { font-size: .82rem; color: #8b4513; font-family: 'Georgia','Times New Roman',serif; margin-bottom: 10px; }
+    .detail-section { margin-bottom: 14px; }
+    .detail-label { font-size: .73rem; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 6px; }
+    .detail-value { font-size: .9rem; color: var(--text); line-height: 1.55; }
+    .detail-example { font-style: italic; color: var(--sky-dark); font-size: .88rem; }
+    .word-table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+    .word-table th { text-align: left; font-size: .7rem; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; padding: 0 8px 6px 0; border-bottom: 1px solid var(--gray-200); }
+    .word-table td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+    .word-table tr:last-child td { border-bottom: none; }
+    .wt-word { font-weight: 600; color: var(--text); }
+    .wt-read { font-size: .75rem; color: var(--gray-400); font-style: italic; display: block; margin-top: 1px; }
+    .wt-ja { color: var(--gray-600); }
+    .wt-note { font-size: .74rem; color: var(--sky-dark); padding: 1px 7px; background: var(--sky-pale); border-radius: 10px; }
+    .wt-speak { width: 28px; height: 28px; border: none; border-radius: 6px; background: var(--gray-100); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .wt-speak:hover { background: var(--gray-200); }
+    .wt-speak.speaking { background: var(--palm-pale); }
+
+    .empty { text-align: center; padding: 60px 20px; color: var(--gray-400); }
+    .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty p { font-size: .92rem; }
+
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+    .header { padding-top: max(20px, env(safe-area-inset-top)); }
+    .main   { padding-bottom: max(40px, calc(env(safe-area-inset-bottom) + 24px)); }
+    .speak-btn, .word-toggle-btn, .filter-btn, .add-btn, .add-cat-btn,
+    .speak-big-btn, .save-translate-btn, .btn-save, .btn-cancel { min-height: 44px; }
+
+    @media (max-width: 520px) {
+      .card-grid { grid-template-columns: 1fr; }
+      .header h1 { font-size: 1.2rem; }
+      .translate-body { grid-template-columns: 1fr; }
+      .translate-divider { border-left: none; border-right: none; border-top: 1px solid var(--gray-200); border-bottom: 1px solid var(--gray-200); height: 36px; padding: 0; }
+      .translate-arrow-icon { transform: rotate(90deg); }
+      .modal { border-radius: 18px 18px 0 0; max-height: 95vh; position: fixed; bottom: 0; left: 0; right: 0; width: 100%; }
+      .modal-overlay { align-items: flex-end; }
+    }
+
+    .offline-banner { background: #7C3AED; color: #fff; text-align: center; font-size: .78rem; padding: 6px 16px; position: sticky; top: 0; z-index: 200; }
+    .settings-btn { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); border-radius: 8px; color: #fff; cursor: pointer; font-size: 16px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; transition: background .15s; flex-shrink: 0; }
+    .settings-btn:hover { background: rgba(255,255,255,.28); }
+    .api-mode-badge { font-size: .65rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; letter-spacing: .4px; }
+    .api-mode-badge.openai { background: #10a37f; color: #fff; }
+    .api-mode-badge.fallback { background: rgba(255,255,255,.18); color: rgba(255,255,255,.9); }
+    .settings-key-input { font-family: monospace; letter-spacing: .05em; }
+    .settings-note { font-size: .73rem; color: var(--gray-400); line-height: 1.55; margin-top: 6px; }
+    .settings-note strong { color: #10a37f; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { useState, useMemo, useCallback, useEffect, useRef } = React;
+
+  const SUPABASE_URL      = "https://gfwlwmyejrdugfhldpqv.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_kUCDEQeGEyAwbC8GdeGorg_1JPK7n11";
+
+  const APP_CONFIG = {
+    appName:     "Daily Life Phrase Book",
+    edition:     "Daily",
+    langs:       ["en", "es"],
+    primaryLang: "en",
+    inputLang:   "ja",
+  };
+  const HAS_EN = true;
+  const HAS_ES = true;
+
+  const sb = (() => {
+    try {
+      if (!SUPABASE_URL.includes("YOUR") && window.supabase)
+        return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch {}
+    return null;
+  })();
+
+  const db = {
+    ready: !!sb,
+    _fromRow: (r) => ({ ...r, tags: r.tags || [], words: r.words || [], phrase_es: r.phrase_es || "", ipa_es: r.ipa_es || "", words_es: r.words_es || [] }),
+    _toRow: (p) => ({
+      id: p.id, phrase: p.phrase, ipa: p.ipa || "", reading: p.reading || "",
+      meaning: p.meaning || "", category: p.category, example: p.example || "",
+      tags: Array.isArray(p.tags) ? p.tags : [],
+      starred: !!p.starred, words: p.words || [],
+      phrase_es: p.phrase_es || "", ipa_es: p.ipa_es || "",
+      words_es: p.words_es || [],
+    }),
+    async loadAll() {
+      if (!sb) return null;
+      const [pr, ca] = await Promise.all([
+        sb.from("phrases_daily").select("*").order("created_at"),
+        sb.from("categories_daily").select("*").order("sort_order").eq("built_in", false),
+      ]);
+      return {
+        phrases:    (pr.data || []).map(this._fromRow),
+        customCats: (ca.data || []).map(r => ({ key: r.key, label: r.label, paletteIdx: r.palette_idx, builtIn: false })),
+      };
+    },
+    async upsertPhrase(p) {
+      if (!sb) return;
+      const row = this._toRow(p);
+      if (!row.words || row.words.length === 0)
+        row.words = (row.phrase || "").split(/\s+/).filter(Boolean).map(w => ({ w, m: "", r: "", note: "" }));
+      if (!row.words_es || row.words_es.length === 0)
+        row.words_es = (row.phrase_es || "").split(/\s+/).filter(Boolean).map(w => ({ w, m: "", r: "", note: "" }));
+      if (!row.ipa && row.phrase) row.ipa = "/" + row.phrase + "/";
+      if (!row.ipa_es && row.phrase_es) row.ipa_es = "/" + row.phrase_es + "/";
+      const { error } = await sb.from("phrases_daily").upsert(row);
+      if (error) console.warn("[Supabase] upsertPhrase:", error.message);
+    },
+    async deletePhrase(id) {
+      if (!sb) return;
+      const { error } = await sb.from("phrases_daily").delete().eq("id", id);
+      if (error) console.warn("[Supabase] deletePhrase:", error.message);
+    },
+    async upsertCategory(c) {
+      if (!sb) return;
+      const { error } = await sb.from("categories_daily").upsert({ key: c.key, label: c.label, palette_idx: c.paletteIdx, built_in: false, sort_order: 100 });
+      if (error) console.warn("[Supabase] upsertCategory:", error.message);
+    },
+    async deleteCategory(key) {
+      if (!sb) return;
+      const { error } = await sb.from("categories_daily").delete().eq("key", key);
+      if (error) console.warn("[Supabase] deleteCategory:", error.message);
+    },
+  };
+
+  const PALETTE = [
+    { border:"#0EA5E9", bg:"#F0F9FF", text:"#0284C7" },
+    { border:"#22C55E", bg:"#F0FDF4", text:"#16A34A" },
+    { border:"#F59E0B", bg:"#FFFBEB", text:"#B45309" },
+    { border:"#8B5CF6", bg:"#F5F3FF", text:"#7C3AED" },
+    { border:"#EC4899", bg:"#FDF2F8", text:"#BE185D" },
+    { border:"#06B6D4", bg:"#ECFEFF", text:"#0E7490" },
+    { border:"#EF4444", bg:"#FEF2F2", text:"#DC2626" },
+    { border:"#84CC16", bg:"#F7FEE7", text:"#65A30D" },
+  ];
+  function palColor(idx) { return PALETTE[idx % PALETTE.length]; }
+
+  const DEFAULT_CATEGORIES = [
+    { key:"shopping",   label:"🛍️ スーパー・買い物",   paletteIdx:0, builtIn:true },
+    { key:"restaurant", label:"🍽️ レストラン・カフェ",  paletteIdx:1, builtIn:true },
+    { key:"uber",       label:"🚗 ウーバー・移動",      paletteIdx:2, builtIn:true },
+    { key:"travel",     label:"✈️ 空港・旅行",          paletteIdx:3, builtIn:true },
+    { key:"apparel",    label:"👟 ショッピング・アパレル", paletteIdx:4, builtIn:true },
+    { key:"gym",        label:"💪 ジム・フィットネス",   paletteIdx:5, builtIn:true },
+    { key:"smalltalk",  label:"💬 スモールトーク・挨拶", paletteIdx:6, builtIn:true },
+    { key:"emergency",  label:"🚨 トラブル・緊急",      paletteIdx:7, builtIn:true },
+  ];
+
+  const INITIAL_PHRASES = [
+    { id:1, phrase:"Do you have this in a different size?", ipa:"/duː juː hæv ðɪs ɪn ə ˈdɪfrənt saɪz/", reading:"ドゥ ユー ハブ ディス イン ア ディファレント サイズ？", meaning:"これの別のサイズはありますか？", phrase_es:"¿Tiene esto en una talla diferente?", ipa_es:"/ˈtjene ˈesto en ˈuna ˈtaʎa difeˈrente/", category:"apparel", example:"Excuse me, do you have this in a different size? Maybe a medium?", tags:["shopping","size"], starred:false, words:[{w:"Do you have",r:"",m:"〜はありますか",note:"丁寧な質問"},{w:"this",r:"",m:"これ",note:"指示代名詞"},{w:"different",r:"",m:"違う",note:"形容詞"},{w:"size",r:"",m:"サイズ",note:"名詞"}], words_es:[{w:"Tiene",r:"",m:"ありますか",note:"tener三人称"},{w:"talla",r:"",m:"サイズ・タマ",note:"名詞（衣類）"},{w:"diferente",r:"",m:"違う",note:"形容詞"}]},
+    { id:2, phrase:"Can I get that to go, please?", ipa:"/kæn aɪ ɡɛt ðæt tə ɡoʊ pliːz/", reading:"キャン アイ ゲット ザット トゥ ゴー プリーズ？", meaning:"テイクアウトにできますか？", phrase_es:"¿Me lo puede poner para llevar, por favor?", ipa_es:"/me lo ˈpwede poˈner ˈpara ʎeˈβar por faˈβor/", category:"restaurant", example:"That looks amazing — can I get that to go, please?", tags:["takeout","cafe"], starred:true, words:[{w:"Can I get",r:"",m:"〜にできますか",note:"カジュアルな依頼"},{w:"to go",r:"",m:"テイクアウトで",note:"慣用句"},{w:"please",r:"",m:"お願いします",note:"丁寧語"}], words_es:[{w:"poner",r:"",m:"入れる・準備する",note:"動詞"},{w:"para llevar",r:"",m:"テイクアウトで",note:"慣用句"},{w:"por favor",r:"",m:"お願いします",note:"丁寧語"}]},
+    { id:3, phrase:"I'm heading to [address] — what's the fastest route?", ipa:"/aɪm ˈhɛdɪŋ tə wɒts ðə ˈfæstɪst ruːt/", reading:"アイム ヘッディング トゥ…ワッツ ザ ファステスト ルート？", meaning:"〜に向かっています。一番早いルートはどこですか？", phrase_es:"Voy a [dirección] — ¿cuál es la ruta más rápida?", ipa_es:"/ˈboj a ˈkwal es la ˈruta mas ˈrapiða/", category:"uber", example:"Hey, I'm heading to Venice Beach — what's the fastest route this time of day?", tags:["directions","uber"], starred:false, words:[{w:"heading to",r:"",m:"〜に向かう",note:"進行形"},{w:"fastest",r:"",m:"最速の",note:"最上級"},{w:"route",r:"",m:"ルート・道",note:"名詞"}], words_es:[{w:"Voy a",r:"",m:"〜に行く",note:"ir一人称"},{w:"ruta",r:"",m:"ルート",note:"名詞"},{w:"rápida",r:"",m:"速い",note:"形容詞"}]},
+    { id:4, phrase:"Where's the baggage claim?", ipa:"/wɛrz ðə ˈbæɡɪdʒ kleɪm/", reading:"ウェアズ ザ バゲージ クレイム？", meaning:"荷物受取所はどこですか？", phrase_es:"¿Dónde está el reclamo de equipaje?", ipa_es:"/ˈdonde esˈta el reˈklamo de ekiˈpaxe/", category:"travel", example:"Excuse me, where's the baggage claim for international arrivals?", tags:["airport","arrivals"], starred:false, words:[{w:"Where's",r:"",m:"どこにありますか",note:"Where is の短縮"},{w:"baggage claim",r:"",m:"荷物受取所",note:"空港用語"},{w:"international",r:"",m:"国際",note:"形容詞"}], words_es:[{w:"dónde",r:"",m:"どこ",note:"疑問副詞"},{w:"reclamo",r:"",m:"受取・クレーム",note:"名詞"},{w:"equipaje",r:"",m:"荷物・バゲージ",note:"名詞"}]},
+    { id:5, phrase:"What's the Wi-Fi password?", ipa:"/wɒts ðə ˈwaɪfaɪ ˈpæswɜːrd/", reading:"ワッツ ザ ワイファイ パスワード？", meaning:"Wi-Fiのパスワードは何ですか？", phrase_es:"¿Cuál es la contraseña del Wi-Fi?", ipa_es:"/ˈkwal es la kontraˈseɲa del ˈwifi/", category:"restaurant", example:"Love this place! By the way, what's the Wi-Fi password?", tags:["cafe","wifi"], starred:true, words:[{w:"What's",r:"",m:"何ですか",note:"What is の短縮"},{w:"Wi-Fi",r:"",m:"ワイファイ",note:"名詞"},{w:"password",r:"",m:"パスワード",note:"名詞"}], words_es:[{w:"Cuál",r:"",m:"どれ・何",note:"疑問詞"},{w:"contraseña",r:"",m:"パスワード",note:"名詞"},{w:"del",r:"",m:"〜の",note:"de+el 縮約"}]},
+    { id:6, phrase:"Do you have a loyalty card?", ipa:"/duː juː hæv ə ˈlɔɪəlti kɑːrd/", reading:"ドゥ ユー ハブ ア ロイヤルティ カード？", meaning:"ポイントカードはお持ちですか？", phrase_es:"¿Tiene tarjeta de fidelidad?", ipa_es:"/ˈtjene tarˈxeta de fideliˈðað/", category:"shopping", example:"Your total is $24.50 — do you have a loyalty card?", tags:["supermarket","points"], starred:false, words:[{w:"loyalty card",r:"",m:"ポイントカード",note:"名詞句"},{w:"Do you have",r:"",m:"お持ちですか",note:"丁寧な質問"}], words_es:[{w:"tarjeta",r:"",m:"カード",note:"名詞"},{w:"fidelidad",r:"",m:"ロイヤルティ・忠誠",note:"名詞"}]},
+    { id:7, phrase:"Can you spot me on this last set?", ipa:"/kæn juː spɒt miː ɒn ðɪs læst sɛt/", reading:"キャン ユー スポット ミー オン ディス ラスト セット？", meaning:"最後のセット、補助してもらえますか？", phrase_es:"¿Me puedes ayudar en esta última serie?", ipa_es:"/me ˈpwedes aʝuˈðar en ˈesta ˈultima ˈserje/", category:"gym", example:"Hey man, can you spot me on this last set? Going pretty heavy.", tags:["gym","weights"], starred:false, words:[{w:"spot",r:"",m:"補助する・スポットする",note:"動詞（ジム用語）"},{w:"last set",r:"",m:"最後のセット",note:"名詞句"},{w:"going heavy",r:"",m:"重い重量でやる",note:"慣用表現"}], words_es:[{w:"ayudar",r:"",m:"手伝う",note:"動詞"},{w:"última",r:"",m:"最後の",note:"形容詞"},{w:"serie",r:"",m:"セット（運動）",note:"名詞"}]},
+    { id:8, phrase:"I think I got the wrong order.", ipa:"/aɪ θɪŋk aɪ ɡɒt ðə rɒŋ ˈɔːrdər/", reading:"アイ シンク アイ ガット ザ ロング オーダー", meaning:"注文と違うものが来たと思います。", phrase_es:"Creo que me trajeron el pedido equivocado.", ipa_es:"/ˈkreo ke me traˈxeron el peˈðiðo ekiβoˈkaðo/", category:"restaurant", example:"Sorry to bother you, but I think I got the wrong order — I had the avocado toast.", tags:["restaurant","complaint"], starred:false, words:[{w:"I think",r:"",m:"〜だと思います",note:"丁寧な婉曲表現"},{w:"wrong order",r:"",m:"違う注文・間違い",note:"名詞句"},{w:"got",r:"",m:"受け取った",note:"getの過去形"}], words_es:[{w:"Creo que",r:"",m:"〜だと思います",note:"creer接続法"},{w:"trajeron",r:"",m:"持ってきた",note:"traerの三人称複数過去"},{w:"equivocado",r:"",m:"間違った",note:"形容詞"}]},
+  ];
+
+  /* ════════ Web Speech API ════════ */
+  const PREFERRED_VOICES_EN = ["Google US English","Samantha","Alex","Microsoft Aria Online (Natural) - English (United States)"];
+  const PREFERRED_VOICES_ES = ["Google español","Google español de Estados Unidos","Monica","Juan","Paulina","Diego"];
+
+  function useSpeech() {
+    const [speakingId, setSpeakingId] = useState(null);
+    const [voiceName, setVoiceName]   = useState("");
+    const [voiceNameEs, setVoiceNameEs] = useState("");
+    const voiceRef   = useRef(null);
+    const voiceRefEs = useRef(null);
+
+    const loadVoice = useCallback(() => {
+      const voices = window.speechSynthesis?.getVoices() || [];
+      if (!voices.length) return;
+      let en = null;
+      for (const n of PREFERRED_VOICES_EN) { en = voices.find(v => v.name === n); if (en) break; }
+      if (!en) en = voices.find(v => v.lang?.startsWith("en-US")) || voices.find(v => v.lang?.startsWith("en")) || voices[0];
+      voiceRef.current = en; setVoiceName(en?.name || "");
+      let es = null;
+      for (const n of PREFERRED_VOICES_ES) { es = voices.find(v => v.name === n); if (es) break; }
+      if (!es) es = voices.find(v => v.lang?.startsWith("es-")) || voices.find(v => v.lang?.startsWith("es"));
+      voiceRefEs.current = es; setVoiceNameEs(es?.name || "");
+    }, []);
+
+    useEffect(() => {
+      if (!window.speechSynthesis) return;
+      loadVoice();
+      window.speechSynthesis.onvoiceschanged = loadVoice;
+      return () => window.speechSynthesis.cancel();
+    }, [loadVoice]);
+
+    const speak = useCallback((text, id, lang = "en-US") => {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      if (speakingId === id) { setSpeakingId(null); return; }
+      const utt = new SpeechSynthesisUtterance(text);
+      const isEs = lang.startsWith("es");
+      utt.lang = lang; utt.rate = isEs ? 0.85 : 0.82; utt.pitch = 1; utt.volume = 1;
+      const voice = isEs ? voiceRefEs.current : voiceRef.current;
+      if (voice) utt.voice = voice;
+      utt.onend = () => setSpeakingId(null);
+      utt.onerror = () => setSpeakingId(null);
+      setSpeakingId(id);
+      window.speechSynthesis.speak(utt);
+    }, [speakingId]);
+
+    return { speakingId, speak, voiceName, voiceNameEs };
+  }
+
+  function SpeakerIcon({ size=14, speaking }) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        {speaking && <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>}
+      </svg>
+    );
+  }
+
+  /* ════════ IPA 取得 ════════ */
+  async function fetchEnIpa(phrase) {
+    try {
+      const tokens = phrase.match(/[a-zA-Z]+/g) || [];
+      if (!tokens.length) return "/" + phrase + "/";
+      const unique = [...new Set(tokens.map(w => w.toLowerCase()))];
+      const ipaMap = {};
+      await Promise.all(unique.slice(0, 18).map(async (word) => {
+        try {
+          const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+          if (!r.ok) return;
+          const d = await r.json();
+          if (!Array.isArray(d) || !d[0]) return;
+          const entry = d[0];
+          let ipa = entry.phonetic;
+          if (!ipa && entry.phonetics) { const found = entry.phonetics.find(p => p.text?.trim()); if (found) ipa = found.text; }
+          if (ipa) ipaMap[word] = ipa.replace(/^\/|\/$/g, "");
+        } catch {}
+      }));
+      const parts = tokens.map(t => ipaMap[t.toLowerCase()]).filter(Boolean);
+      return parts.length ? "/" + parts.join(" ") + "/" : "/" + phrase + "/";
+    } catch { return "/" + phrase + "/"; }
+  }
+
+  async function fetchEsIpa(phrase) {
+    try {
+      const tokens = phrase.match(/[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]+/gi) || [];
+      if (!tokens.length) return "/" + phrase + "/";
+      const unique = [...new Set(tokens.map(w => w.toLowerCase()))];
+      const ipaMap = {};
+      await Promise.all(unique.slice(0, 12).map(async (word) => {
+        try {
+          const r = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/es/${word}`);
+          if (!r.ok) return;
+          const d = await r.json();
+          if (!Array.isArray(d) || !d[0]) return;
+          const entry = d[0];
+          let ipa = entry.phonetic;
+          if (!ipa && entry.phonetics) { const found = entry.phonetics.find(p => p.text?.trim()); if (found) ipa = found.text; }
+          if (ipa) ipaMap[word] = ipa.replace(/^\/|\/$/g, "");
+        } catch {}
+      }));
+      const parts = tokens.map(t => ipaMap[t.toLowerCase()]).filter(Boolean);
+      return parts.length ? "/" + parts.join(" ") + "/" : "/" + phrase + "/";
+    } catch { return "/" + phrase + "/"; }
+  }
+
+  /* ════════ 翻訳 ════════ */
+  async function translateText(text, from, to) {
+    try {
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(text)}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && Array.isArray(data[0])) {
+          const translated = data[0].map(chunk => (Array.isArray(chunk) ? chunk[0] : "")).filter(Boolean).join("");
+          if (translated && translated !== text) return translated;
+        }
+      }
+    } catch {}
+    const url2 = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}%7C${to}`;
+    const res2 = await fetch(url2);
+    const json = await res2.json();
+    if (Number(json.responseStatus) === 200) {
+      const t = json.responseData?.translatedText || "";
+      if (t && t !== text && !/^QUERY|^MYMEMORY|^\[/i.test(t)) return t;
+    }
+    throw new Error(`Translation ${from}→${to} failed`);
+  }
+
+  /* ════════ 単語解説 ════════ */
+  async function fetchWordBreakdown(phrase, fromLang, toLang, tokenPattern) {
+    if (!phrase) return [];
+    const rawTokens = phrase.match(tokenPattern) || [];
+    if (!rawTokens.length) return [];
+    const seen = new Set(); const unique = [];
+    for (const t of rawTokens) { const k = t.toLowerCase(); if (!seen.has(k)) { seen.add(k); unique.push(t); } }
+    const fallback = unique.slice(0, 14).map(w => ({ w, r: "", m: "", note: "" }));
+    try {
+      const transMap = {};
+      const batch  = unique.slice(0, 14).join("\n");
+      const result = await translateText(batch, fromLang, toLang);
+      result.split("\n").forEach((line, i) => { if (unique[i] && line.trim()) transMap[unique[i].toLowerCase()] = line.trim(); });
+      const built = new Set();
+      const translated = rawTokens
+        .filter(t => { const k = t.toLowerCase(); if (built.has(k)) return false; built.add(k); return !!transMap[k]; })
+        .slice(0, 14)
+        .map(w => ({ w, r: "", m: transMap[w.toLowerCase()] || "", note: "" }));
+      return translated.length > 0 ? translated : fallback;
+    } catch { return fallback; }
+  }
+
+  async function fetchEnWords(enPhrase) { return fetchWordBreakdown(enPhrase, "en", "ja", /[a-zA-Z']+/g); }
+  async function fetchEsWords(esPhrase) { return fetchWordBreakdown(esPhrase, "es", "ja", /[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]+/gi); }
+
+  /* ════════ OpenAI 一撃パース（日常生活チューニング版） ════════ */
+  async function openAIEnrich(jaText) {
+    const apiKey = (localStorage.getItem("openai_api_key") || "").trim();
+    if (!apiKey) throw new Error("no_key");
+
+    const prompt =
+`You are a native-English bilingual assistant specializing in real-life American and Latin American everyday conversation.
+
+Given the Japanese phrase below, output a JSON object with EXACTLY these 6 keys.
+ALL 6 keys are required — never omit any.
+
+{
+  "en":       "The most natural, casual, colloquial English phrase a native speaker would actually say in everyday life — at a supermarket, Uber, café, gym, airport, or during small talk. Never use stiff textbook English. Prefer contractions, common idioms, and real spoken American phrasing.",
+  "ipa":      "/IPA transcription of the English phrase/",
+  "es":       "The most natural, colloquial Spanish phrase a native Latin American speaker would actually use in the same situation. Prefer Mexican/US-Latino everyday speech. Avoid overly formal Castilian phrasing.",
+  "ipa_es":   "/IPA transcription of the Spanish phrase/",
+  "words":    [{"w":"EnglishWord","m":"日本語の意味","r":"","note":"品詞・使い方メモ（日本語）"}],
+  "words_es": [{"w":"PalabraES","m":"日本語の意味","r":"","note":"品詞・使い方メモ（日本語）"}]
+}
+
+RULES:
+1. en — real, casual, modern American spoken English. No formal or clinical language.
+2. es — real, casual Latin American Spanish (Mexico/US-Latino preferred). No formal Spain-only expressions.
+3. ipa — required, wrap in /slashes/.
+4. ipa_es — required, wrap in /slashes/. NEVER omit.
+5. words / words_es — 3 to 8 key vocabulary items. note field in Japanese.
+6. r field — always "".
+
+Context examples to match the tone:
+- 「レジ袋はいらないです」→ en: "I'm good without a bag, thanks." es: "No necesito bolsa, gracias."
+- 「エアコンをもう少し下げてもらえますか」→ en: "Could you turn the AC down a little?" es: "¿Puedes bajar el aire un poco?"
+- 「このあたりでおすすめのカフェはありますか」→ en: "Do you know any good cafés around here?" es: "¿Conoces algún café bueno por aquí?"
+
+Japanese input: "${jaText}"`;
+
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.25,
+        max_tokens: 1400,
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(`OpenAI: ${errBody.error?.message || `HTTP ${res.status}`}`);
+    }
+
+    const data    = await res.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    const jsonStr = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const parsed  = JSON.parse(jsonStr);
+    if (!parsed.ipa_es && parsed.es) { parsed.ipa_es = "/" + parsed.es + "/"; }
+    return parsed;
+  }
+
+  /* ════════ 翻訳パネル ════════ */
+  function TranslatePanel({ onSaveRequest, speakingId, speak }) {
+    const [jaText,   setJaText]   = useState("");
+    const [enText,   setEnText]   = useState("");
+    const [enStatus, setEnStatus] = useState("idle");
+    const [esText,   setEsText]   = useState("");
+    const [esStatus, setEsStatus] = useState("idle");
+    const [errMsg,   setErrMsg]   = useState("");
+    const [saving,   setSaving]   = useState(false);
+    const [saveStep, setSaveStep] = useState("");
+    const timerRef = useRef(null);
+
+    useEffect(() => {
+      const q = jaText.trim();
+      if (!q) { setEnText(""); setEnStatus("idle"); setEsText(""); setEsStatus("idle"); setErrMsg(""); return; }
+      setEnStatus("loading"); setEsText(""); setEsStatus("idle");
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(async () => {
+        try {
+          const en = await translateText(q, "ja", "en");
+          setEnText(en); setEnStatus("done");
+          setEsStatus("loading");
+          try { const es = await translateText(en, "en", "es"); setEsText(es); setEsStatus("done"); }
+          catch { setEsStatus("error"); }
+        } catch {
+          setErrMsg("翻訳に失敗しました。ネットワーク接続を確認してください。");
+          setEnStatus("error");
+        }
+      }, 700);
+      return () => clearTimeout(timerRef.current);
+    }, [jaText]);
+
+    const handleSave = async () => {
+      if (!jaText.trim() || saving) return;
+      setSaving(true);
+      const apiKey = (localStorage.getItem("openai_api_key") || "").trim();
+      try {
+        if (apiKey) {
+          setSaveStep("🤖 GPT-4o-mini で生成中...");
+          try {
+            const r = await openAIEnrich(jaText.trim());
+            const en      = (r.en     || "").trim() || enText || jaText.trim();
+            const es      = (r.es     || "").trim();
+            const ipa     = (r.ipa    || "").trim() || "/" + en + "/";
+            const ipa_es  = (r.ipa_es || "").trim() || (es ? "/" + es + "/" : "");
+            const words   = Array.isArray(r.words)    && r.words.length    > 0 ? r.words    : en.split(/\s+/).filter(Boolean).map(w => ({ w, m: "", r: "", note: "" }));
+            const words_es = Array.isArray(r.words_es) && r.words_es.length > 0 ? r.words_es : es.split(/\s+/).filter(Boolean).map(w => ({ w, m: "", r: "", note: "" }));
+            setSaveStep("💾 保存中...");
+            onSaveRequest({ ja: jaText.trim(), en, ipa, words, es, ipa_es, words_es });
+            return;
+          } catch (e) {
+            const msg = e.message === "no_key" ? "APIキー未設定" : e.message;
+            console.warn("[OpenAI] failed:", msg, "→ fallback");
+            setSaveStep(`⚠ GPT エラー。別の方法で保存します...`);
+            await new Promise(r => setTimeout(r, 800));
+          }
+        }
+        let en = enText || "";
+        if (!en) { setSaveStep("🇺🇸 英語に翻訳中..."); try { en = await translateText(jaText.trim(), "ja", "en"); } catch { en = jaText.trim(); } }
+        let es = esText || "";
+        if (!es) { setSaveStep("🇪🇸 スペイン語に翻訳中..."); try { es = await translateText(en, "en", "es"); } catch {} }
+        setSaveStep("① 🇺🇸 IPA 取得中...");
+        let ipa = "/" + en + "/"; try { const v = await fetchEnIpa(en); if (v) ipa = v; } catch {}
+        setSaveStep("② 🇪🇸 IPA 取得中...");
+        let ipa_es = es ? "/" + es + "/" : ""; if (es) { try { const v = await fetchEsIpa(es); if (v) ipa_es = v; } catch {} }
+        setSaveStep("③ 🇺🇸 単語解説 生成中...");
+        let words = en.split(/\s+/).filter(Boolean).map(w => ({ w, m: "", r: "", note: "" }));
+        try { const v = await fetchEnWords(en); if (v && v.length > 0) words = v; } catch {}
+        setSaveStep("④ 🇪🇸 単語解説 生成中...");
+        let words_es = es.split(/\s+/).filter(Boolean).map(w => ({ w, m: "", r: "", note: "" }));
+        if (es) { try { const v = await fetchEsWords(es); if (v && v.length > 0) words_es = v; } catch {} }
+        setSaveStep("💾 保存中...");
+        onSaveRequest({ ja: jaText.trim(), en, ipa, words, es, ipa_es, words_es });
+      } catch (e) { console.warn("[handleSave]", e); }
+      finally { setSaving(false); setSaveStep(""); }
+    };
+
+    const clear = () => { setJaText(""); setEnText(""); setEnStatus("idle"); setEsText(""); setEsStatus("idle"); setErrMsg(""); window.speechSynthesis?.cancel(); };
+    const canSave = enStatus === "done" && !saving;
+    const hasApiKey = !!(localStorage.getItem("openai_api_key") || "").trim();
+
+    return (
+      <div className="translate-panel">
+        <div className="translate-panel-header">
+          <div className="translate-panel-header-icon">🌐</div>
+          <span className="translate-panel-title">日本語 → 英語・スペイン語 自動翻訳</span>
+          <span style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:6}}>
+            {hasApiKey
+              ? <span className="api-mode-badge openai">🤖 GPT-4o-mini</span>
+              : <span className="api-mode-badge fallback">⚙ APIキー未設定</span>
+            }
+          </span>
+        </div>
+        <div className="translate-body">
+          <div className="translate-src">
+            <span className="translate-lang-label">🇯🇵 日本語</span>
+            <textarea className="translate-textarea"
+              placeholder={"日本語で入力してください\n例：レジ袋はいらないです\n　　混んでいますか？\n　　このあたりでおすすめは？"}
+              value={jaText} onChange={e => setJaText(e.target.value)} rows={6} />
+            <div className="translate-src-footer">
+              {jaText && <button className="translate-clear" onClick={clear}>✕ クリア</button>}
+              <span className="char-count" style={{marginLeft:"auto"}}>{jaText.length} 字</span>
+            </div>
+          </div>
+          <div className="translate-divider">
+            <div className="translate-arrow-icon">→</div>
+          </div>
+          <div className="translate-dst">
+            <div className="lang-block">
+              <span className="lang-flag-label en">🇺🇸 English</span>
+              {enStatus === "idle"    && <p className="translate-result-text placeholder">日本語を入力すると英語が表示されます</p>}
+              {enStatus === "loading" && <p className="translate-result-text loading"><span className="spinner"/>翻訳中...</p>}
+              {enStatus === "done"    && <p className="translate-result-text">{enText}</p>}
+              {enStatus === "error"   && <p className="translate-result-text error">⚠ {errMsg}</p>}
+              {enStatus === "done" && (
+                <div className="lang-speak-row">
+                  <button className={`speak-big-btn${speakingId === "tr-en" ? " speaking" : ""}`} onClick={() => speak(enText, "tr-en", "en-US")}>
+                    <SpeakerIcon size={14} speaking={speakingId === "tr-en"}/>
+                    {speakingId === "tr-en" ? "再生中..." : "🇺🇸 読み上げ"}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="lang-block lang-block-es">
+              <span className="lang-flag-label es">🇪🇸 Español</span>
+              {esStatus === "idle"    && <p className="translate-result-text placeholder">英語翻訳後に自動でスペイン語を生成します</p>}
+              {esStatus === "loading" && <p className="translate-result-text loading"><span className="spinner"/>スペイン語に翻訳中...</p>}
+              {esStatus === "done"    && <p className="translate-result-text es-text">{esText}</p>}
+              {esStatus === "error"   && <p className="translate-result-text error">⚠ スペイン語翻訳に失敗しました</p>}
+              {esStatus === "done" && (
+                <div className="lang-speak-row">
+                  <button className={`speak-big-btn es-btn${speakingId === "tr-es" ? " speaking" : ""}`} onClick={() => speak(esText, "tr-es", "es-ES")}>
+                    <SpeakerIcon size={14} speaking={speakingId === "tr-es"}/>
+                    {speakingId === "tr-es" ? "再生中..." : "🇪🇸 読み上げ"}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="translate-save-row">
+              {saving
+                ? <span style={{fontSize:".8rem",color:"var(--gray-600)",display:"flex",alignItems:"center",gap:8}}>
+                    <span className="spinner-sm"/>{saveStep}
+                  </span>
+                : <button className="save-translate-btn" disabled={!canSave} onClick={handleSave}>
+                    ＋ フレーズ帳に保存（EN + ES）
+                  </button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ════════ 設定モーダル ════════ */
+  function SettingsModal({ onClose }) {
+    const [key, setKey]       = useState(() => localStorage.getItem("openai_api_key") || "");
+    const [saved, setSaved]   = useState(false);
+    const [testing, setTesting] = useState(false);
+    const [testMsg, setTestMsg] = useState("");
+
+    const saveKey = () => {
+      const trimmed = key.trim();
+      trimmed ? localStorage.setItem("openai_api_key", trimmed) : localStorage.removeItem("openai_api_key");
+      setSaved(true); setTestMsg(""); setTimeout(() => setSaved(false), 2500);
+    };
+    const clearKey = () => { localStorage.removeItem("openai_api_key"); setKey(""); setSaved(false); setTestMsg(""); };
+    const testKey = async () => {
+      const k = key.trim(); if (!k) { setTestMsg("❌ キーが空です"); return; }
+      setTesting(true); setTestMsg("接続テスト中...");
+      try {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${k}` },
+          body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "user", content: "Reply with just: OK" }], max_tokens: 5 }),
+        });
+        const data = await res.json().catch(() => ({}));
+        setTestMsg(res.ok ? "✅ 接続成功！GPT-4o-mini が使用できます" : `❌ エラー: ${data.error?.message || `HTTP ${res.status}`}`);
+      } catch (e) { setTestMsg(`❌ ネットワークエラー: ${e.message}`); }
+      finally { setTesting(false); }
+    };
+
+    return (
+      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+        <div className="modal modal-sm">
+          <div className="modal-header"><h2>⚙️ 設定</h2><button className="modal-close" onClick={onClose}>✕</button></div>
+          <div className="modal-body">
+            <div className="form-group">
+              <label>OpenAI API キー</label>
+              <input type="password" className="form-control settings-key-input" value={key}
+                onChange={e => { setKey(e.target.value); setSaved(false); setTestMsg(""); }} placeholder="sk-..." autoComplete="off" />
+              <p className="settings-note">
+                入力したキーは <strong>ブラウザの localStorage のみ</strong> に保存されます。<br/>
+                キーを設定すると <strong style={{color:"#10a37f"}}>GPT-4o-mini</strong> が使われ、
+                日常会話に最適化された自然な英語・スペイン語を一括生成します。
+              </p>
+              {testMsg && (
+                <p style={{ fontSize:".8rem", marginTop:8, padding:"6px 10px", borderRadius:6,
+                  background: testMsg.startsWith("✅") ? "#e8f5e9" : testMsg.startsWith("❌") ? "#fdecea" : "#f5f5f5",
+                  color: testMsg.startsWith("✅") ? "#2e7d32" : testMsg.startsWith("❌") ? "#c62828" : "var(--gray-600)" }}>
+                  {testMsg}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="modal-footer" style={{flexWrap:"wrap",gap:8}}>
+            {key && <button className="btn-cancel" style={{color:"#dc2626",borderColor:"#fecaca"}} onClick={clearKey}>🗑 削除</button>}
+            <button className="btn-cancel" onClick={testKey} disabled={testing || !key.trim()} style={{borderColor:"var(--sky)",color:"var(--sky-dark)"}}>
+              {testing ? "テスト中..." : "🔌 接続テスト"}
+            </button>
+            <button className="btn-cancel" onClick={onClose}>閉じる</button>
+            <button className="btn-save" onClick={saveKey}>{saved ? "✓ 保存済み！" : "保存"}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ════════ カテゴリ追加モーダル ════════ */
+  function AddCategoryModal({ onAdd, onClose, usedIdxs }) {
+    const [label, setLabel] = useState(""); const [emoji, setEmoji] = useState("");
+    const [paletteIdx, setPaletteIdx] = useState(() => { for (let i = 0; i < PALETTE.length; i++) { if (!usedIdxs.includes(i)) return i; } return 0; });
+    const submit = (e) => {
+      e.preventDefault();
+      const name = (emoji ? emoji + " " : "") + label.trim();
+      if (!name) return;
+      onAdd({ key: "custom-" + Date.now(), label: name, paletteIdx, builtIn: false }); onClose();
+    };
+    return (
+      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+        <div className="modal modal-sm">
+          <div className="modal-header"><h2>カテゴリを追加</h2><button className="modal-close" onClick={onClose}>✕</button></div>
+          <form onSubmit={submit}>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>絵文字（任意）</label>
+                <input className="form-control" value={emoji} onChange={e => setEmoji(e.target.value)} placeholder="例: 🏖️ 🎵 🐶" maxLength={4} style={{width:80}} />
+              </div>
+              <div className="form-group">
+                <label>カテゴリ名 *</label>
+                <input className="form-control" value={label} onChange={e => setLabel(e.target.value)} placeholder="例: 病院・医療" required autoFocus />
+              </div>
+              <div className="form-group">
+                <label>カラー</label>
+                <div className="color-swatch-row">
+                  {PALETTE.map((p, i) => (
+                    <div key={i} className={`color-swatch${paletteIdx === i ? " selected" : ""}`}
+                      style={{background:p.border}} onClick={() => setPaletteIdx(i)} />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn-cancel" onClick={onClose}>キャンセル</button>
+              <button type="submit" className="btn-save">追加</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  /* ════════ 単語チップ ════════ */
+  function WordChips({ words, speakingId, speak, phraseId, lang = "en-US" }) {
+    const isEs = lang.startsWith("es");
+    return (
+      <div className="word-breakdown">
+        <div className="word-chip-row">
+          {(words||[]).map((w, i) => {
+            const wid = `wc-${phraseId}-${i}`;
+            return (
+              <div key={i} className={`word-chip${isEs ? " es" : ""}${speakingId===wid?" speaking":""}`}
+                onClick={e => { e.stopPropagation(); speak(w.w, wid, lang); }}>
+                <span className="wc-en">{w.w}</span>
+                {w.r && <span className="wc-read">{w.r}</span>}
+                <span className="wc-ja">{w.m}</span>
+                {w.note && <span className="wc-note">{w.note}</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  /* ════════ フレーズ追加・編集モーダル ════════ */
+  function PhraseModal({ phrase, onSave, onClose, categories }) {
+    const blank = { phrase:"", ipa:"", reading:"", meaning:"", phrase_es:"", ipa_es:"", words_es:[], category: categories[0]?.key || "shopping", example:"", tags:[], starred:false, words:[] };
+    const [form, setForm] = useState(() => {
+      if (!phrase) return blank;
+      const tags = Array.isArray(phrase.tags) ? phrase.tags.join(", ") : (phrase.tags || "");
+      return { ...blank, ...phrase, tags };
+    });
+    const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+    const submit = (e) => {
+      e.preventDefault();
+      if (!form.phrase.trim()) return;
+      onSave({ ...form, tags: typeof form.tags === "string" ? form.tags.split(",").map(t => t.trim()).filter(Boolean) : form.tags });
+    };
+    return (
+      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+        <div className="modal">
+          <div className="modal-header"><h2>{phrase?.id ? "フレーズを編集" : "フレーズを追加"}</h2><button className="modal-close" onClick={onClose}>✕</button></div>
+          <form onSubmit={submit}>
+            <div className="modal-body">
+              <div className="form-section-label en">🇺🇸 English</div>
+              <div className="form-group"><label>英語フレーズ *</label><input className="form-control" value={form.phrase} onChange={e => set("phrase", e.target.value)} placeholder="e.g. Can I get that to go?" required /></div>
+              <div className="form-group"><label>発音記号（IPA）</label><input className="form-control" value={form.ipa} onChange={e => set("ipa", e.target.value)} placeholder="e.g. /kæn aɪ ɡɛt ðæt tə ɡoʊ/" style={{fontFamily:"Georgia,serif"}} /></div>
+              <div className="form-group"><label>読み方（カタカナ）</label><input className="form-control" value={form.reading} onChange={e => set("reading", e.target.value)} placeholder="e.g. キャン アイ ゲット ザット トゥ ゴー？" /></div>
+              <div className="form-section-label es">🇪🇸 Español</div>
+              <div className="form-group"><label>スペイン語フレーズ</label><input className="form-control" value={form.phrase_es||""} onChange={e => set("phrase_es", e.target.value)} placeholder="e.g. ¿Me lo puede poner para llevar?" /></div>
+              <div className="form-group"><label>スペイン語 IPA</label><input className="form-control" value={form.ipa_es||""} onChange={e => set("ipa_es", e.target.value)} placeholder="e.g. /me lo ˈpwede poˈner ˈpara ʎeˈβar/" style={{fontFamily:"Georgia,serif"}} /></div>
+              <div className="form-section-label en" style={{marginTop:16}}>🇯🇵 共通情報</div>
+              <div className="form-group"><label>意味・日本語訳</label><input className="form-control" value={form.meaning} onChange={e => set("meaning", e.target.value)} placeholder="e.g. テイクアウトにできますか？" /></div>
+              <div className="form-group">
+                <label>カテゴリ</label>
+                <select className="form-control" value={form.category} onChange={e => set("category", e.target.value)}>
+                  {categories.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group"><label>例文</label><textarea className="form-control" value={form.example} onChange={e => set("example", e.target.value)} placeholder="使用例（任意）" /></div>
+              <div className="form-group"><label>タグ（カンマ区切り）</label><input className="form-control" value={typeof form.tags==="string" ? form.tags : form.tags.join(", ")} onChange={e => set("tags", e.target.value)} placeholder="e.g. cafe, takeout" /></div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn-cancel" onClick={onClose}>キャンセル</button>
+              <button type="submit" className="btn-save">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  /* ════════ 詳細モーダル ════════ */
+  function DetailModal({ phrase, onClose, onEdit, onDelete, speakingId, speak, categories }) {
+    const sid = `detail-${phrase.id}`;
+    const cat = categories.find(c => c.key === phrase.category);
+    const col = palColor(cat?.paletteIdx ?? 0);
+    return (
+      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+        <div className="modal">
+          <div className="modal-header"><h2>フレーズ詳細</h2><button className="modal-close" onClick={onClose}>✕</button></div>
+          <div className="modal-body">
+            <span className="card-badge" style={{background:col.bg,color:col.text,marginBottom:10,display:"inline-block"}}>{cat?.label || phrase.category}</span>
+            <div style={{marginBottom:14}}>
+              <p className="detail-label" style={{color:"var(--sky-dark)"}}>🇺🇸 English</p>
+              <p className="detail-phrase">{phrase.phrase}</p>
+              {phrase.ipa     && <p className="detail-ipa">{phrase.ipa}</p>}
+              {phrase.reading && <p className="detail-reading">{phrase.reading}</p>}
+              <div className="detail-speak-row">
+                <button className={`detail-speak-btn${speakingId===sid?" speaking":""}`} onClick={() => speak(phrase.phrase, sid, "en-US")}>
+                  <SpeakerIcon size={15} speaking={speakingId===sid}/>
+                  {speakingId===sid ? "再生中..." : "🇺🇸 読み上げ"}
+                </button>
+              </div>
+            </div>
+            {phrase.phrase_es && (
+              <div className="detail-es-block" style={{marginBottom:14}}>
+                <p className="detail-label" style={{color:"var(--es-accent)"}}>🇪🇸 Español</p>
+                <p className="detail-es-phrase">{phrase.phrase_es}</p>
+                {phrase.ipa_es && <p className="detail-es-ipa">{phrase.ipa_es}</p>}
+                <div className="detail-speak-row" style={{marginBottom:0,marginTop:8}}>
+                  <button className={`detail-speak-btn es-btn${speakingId===`${sid}-es`?" speaking":""}`} onClick={() => speak(phrase.phrase_es, `${sid}-es`, "es-ES")}>
+                    <SpeakerIcon size={15} speaking={speakingId===`${sid}-es`}/>
+                    {speakingId===`${sid}-es` ? "再生中..." : "🇪🇸 読み上げ"}
+                  </button>
+                </div>
+              </div>
+            )}
+            {phrase.meaning && <div className="detail-section"><p className="detail-label">日本語訳</p><p className="detail-value">{phrase.meaning}</p></div>}
+            {phrase.example && <div className="detail-section"><p className="detail-label">例文</p><p className="detail-example">"{phrase.example}"</p></div>}
+            <div className="detail-section">
+              <p className="detail-label">🇺🇸 英語 — 単語・フレーズ解説</p>
+              {(phrase.words||[]).length === 0
+                ? <p style={{fontSize:".8rem",color:"var(--gray-400)",fontStyle:"italic",display:"flex",alignItems:"center",gap:6}}><span className="spinner-sm"/>取得中...</p>
+                : <table className="word-table">
+                    <thead><tr><th>単語</th><th>意味</th><th>品詞メモ</th><th></th></tr></thead>
+                    <tbody>
+                      {phrase.words.map((w, i) => {
+                        const wid = `wt-${phrase.id}-${i}`;
+                        return (
+                          <tr key={i}>
+                            <td><span className="wt-word">{w.w}</span>{w.r && <span className="wt-read">{w.r}</span>}</td>
+                            <td><span className="wt-ja">{w.m}</span></td>
+                            <td>{w.note && <span className="wt-note">{w.note}</span>}</td>
+                            <td><button className={`wt-speak${speakingId===wid?" speaking":""}`} onClick={() => speak(w.w, wid, "en-US")}><SpeakerIcon size={13} speaking={speakingId===wid}/></button></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+              }
+            </div>
+            {phrase.phrase_es && (
+              <div className="detail-section">
+                <p className="detail-label" style={{color:"var(--es-accent)"}}>🇪🇸 Español — 単語・フレーズ解説</p>
+                {(phrase.words_es||[]).length === 0
+                  ? <p style={{fontSize:".8rem",color:"var(--gray-400)",fontStyle:"italic",display:"flex",alignItems:"center",gap:6}}><span className="spinner-sm"/>取得中...</p>
+                  : <table className="word-table">
+                      <thead><tr><th>単語</th><th>日本語訳</th><th>品詞メモ</th><th></th></tr></thead>
+                      <tbody>
+                        {phrase.words_es.map((w, i) => {
+                          const wid = `wt-es-${phrase.id}-${i}`;
+                          return (
+                            <tr key={i}>
+                              <td><span className="wt-word wt-word-es">{w.w}</span>{w.r && <span className="wt-read">{w.r}</span>}</td>
+                              <td><span className="wt-ja">{w.m}</span></td>
+                              <td>{w.note && <span className="wt-note" style={{background:"#ffe8e8",color:"#9b1c1c"}}>{w.note}</span>}</td>
+                              <td><button className={`wt-speak wt-speak-es${speakingId===wid?" speaking":""}`} onClick={() => speak(w.w, wid, "es-ES")}><SpeakerIcon size={13} speaking={speakingId===wid}/></button></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                }
+              </div>
+            )}
+            {(phrase.tags||[]).length > 0 && (
+              <div className="detail-section"><p className="detail-label">タグ</p><div className="card-tags" style={{marginTop:4}}>{phrase.tags.map(t=><span key={t} className="tag">{t}</span>)}</div></div>
+            )}
+          </div>
+          <div className="modal-footer">
+            <button className="btn-cancel" style={{color:"#dc2626",borderColor:"#fecaca"}} onClick={() => { onDelete(phrase.id); onClose(); }}>削除</button>
+            <button className="btn-cancel" onClick={onClose}>閉じる</button>
+            <button className="btn-save" onClick={() => { onClose(); onEdit(phrase); }}>編集</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ════════ App ════════ */
+  function App() {
+    const [phrases, setPhrases] = useState(() => {
+      try { const s = localStorage.getItem("daily-phrases"); return s ? JSON.parse(s) : INITIAL_PHRASES; } catch { return INITIAL_PHRASES; }
+    });
+    const [categories, setCategories] = useState(() => {
+      try { const s = localStorage.getItem("daily-categories"); return s ? JSON.parse(s) : DEFAULT_CATEGORIES; } catch { return DEFAULT_CATEGORIES; }
+    });
+
+    useEffect(() => { localStorage.setItem("daily-phrases",    JSON.stringify(phrases));    }, [phrases]);
+    useEffect(() => { localStorage.setItem("daily-categories", JSON.stringify(categories)); }, [categories]);
+
+    const [syncStatus, setSyncStatus] = useState(db.ready ? "syncing" : "local");
+    useEffect(() => {
+      if (!db.ready) return;
+      db.loadAll().then(result => {
+        if (!result) { setSyncStatus("error"); return; }
+        const { phrases: sbPhrases, customCats } = result;
+        if (sbPhrases.length === 0) {
+          const local = (() => { try { return JSON.parse(localStorage.getItem("daily-phrases")||"[]"); } catch { return []; } })();
+          if (local.length > 0) local.forEach(p => db.upsertPhrase(p));
+        } else {
+          setPhrases(sbPhrases);
+          const needsRegen = sbPhrases.filter(p =>
+            (p.phrase    && (p.words    || []).length === 0) ||
+            (p.phrase_es && (p.words_es || []).length === 0) ||
+            (p.phrase_es && !p.ipa_es)
+          );
+          if (needsRegen.length > 0) {
+            (async () => {
+              for (const p of needsRegen) {
+                try {
+                  const [newWords, newWordsEs, newIpaEs] = await Promise.all([
+                    (p.words    || []).length === 0 && p.phrase    ? fetchEnWords(p.phrase)    : Promise.resolve(p.words    || []),
+                    (p.words_es || []).length === 0 && p.phrase_es ? fetchEsWords(p.phrase_es) : Promise.resolve(p.words_es || []),
+                    !p.ipa_es && p.phrase_es                       ? fetchEsIpa(p.phrase_es)   : Promise.resolve(p.ipa_es  || ""),
+                  ]);
+                  const upd = { ...p, words: newWords, words_es: newWordsEs, ipa_es: newIpaEs };
+                  setPhrases(ps => ps.map(x => x.id === upd.id ? upd : x));
+                  await db.upsertPhrase(upd);
+                } catch {}
+              }
+            })();
+          }
+        }
+        if (customCats.length > 0) {
+          setCategories(prev => {
+            const builtins = prev.filter(c => c.builtIn);
+            return [...builtins, ...customCats.filter(c => !builtins.find(b => b.key === c.key))];
+          });
+        }
+        setSyncStatus("ok");
+      }).catch(() => setSyncStatus("error"));
+    }, []); // eslint-disable-line
+
+    const [isOffline, setIsOffline] = useState(!navigator.onLine);
+    useEffect(() => {
+      const on  = () => setIsOffline(false);
+      const off = () => setIsOffline(true);
+      window.addEventListener("online",  on);
+      window.addEventListener("offline", off);
+      return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+    }, []);
+
+    const [query,          setQuery]      = useState("");
+    const [activeCategory, setCategory]   = useState("all");
+    const [showAdd,        setShowAdd]    = useState(false);
+    const [addPreset,      setAddPreset]  = useState(null);
+    const [editTarget,     setEditTarget] = useState(null);
+    const [detailTarget,   setDetail]     = useState(null);
+    const [openWords,      setOpenWords]  = useState({});
+    const [showAddCat,     setShowAddCat] = useState(false);
+    const [showSettings,   setShowSettings] = useState(false);
+
+    useEffect(() => {
+      if (!detailTarget) return;
+      const updated = phrases.find(p => p.id === detailTarget.id);
+      if (updated && updated !== detailTarget) setDetail(updated);
+    }, [phrases]); // eslint-disable-line
+
+    useEffect(() => {
+      if (!detailTarget) return;
+      const needsEn    = detailTarget.phrase    && (detailTarget.words    || []).length === 0;
+      const needsEs    = detailTarget.phrase_es && (detailTarget.words_es || []).length === 0;
+      const needsIpaEs = detailTarget.phrase_es && !detailTarget.ipa_es;
+      if (!needsEn && !needsEs && !needsIpaEs) return;
+      (async () => {
+        try {
+          const [newWords, newWordsEs, newIpaEs] = await Promise.all([
+            needsEn    ? fetchEnWords(detailTarget.phrase)    : Promise.resolve(detailTarget.words    || []),
+            needsEs    ? fetchEsWords(detailTarget.phrase_es) : Promise.resolve(detailTarget.words_es || []),
+            needsIpaEs ? fetchEsIpa(detailTarget.phrase_es)   : Promise.resolve(detailTarget.ipa_es   || ""),
+          ]);
+          const upd = { ...detailTarget, words: newWords, words_es: newWordsEs, ipa_es: newIpaEs };
+          setPhrases(ps => ps.map(x => x.id === upd.id ? upd : x));
+          db.upsertPhrase(upd);
+        } catch {}
+      })();
+    }, [detailTarget?.id]); // eslint-disable-line
+
+    const { speakingId, speak, voiceName, voiceNameEs } = useSpeech();
+    const allCategories = useMemo(() => [{ key:"all", label:"すべて", builtIn:true }, ...categories], [categories]);
+
+    const filtered = useMemo(() => {
+      const q = query.toLowerCase();
+      return phrases.filter(p => {
+        const catOk    = activeCategory === "all" || p.category === activeCategory;
+        const searchOk = !q || [p.phrase, p.meaning, p.reading, p.ipa||"", p.phrase_es||"", ...(p.tags||[])].some(s => s.toLowerCase().includes(q));
+        return catOk && searchOk;
+      });
+    }, [phrases, query, activeCategory]);
+
+    const savePhrase = (data) => {
+      const tags = Array.isArray(data.tags) ? data.tags : data.tags.split(",").map(t=>t.trim()).filter(Boolean);
+      const safeWords = (arr, src) => { if (Array.isArray(arr) && arr.length > 0) return arr; return (src||"").split(/\s+/).filter(Boolean).map(w => ({w, m:"", r:"", note:""})); };
+      const safeIpa   = (ipa, src)  => { if (ipa && ipa.trim()) return ipa.trim(); return src ? "/" + src + "/" : ""; };
+      const normalized = { ...data, tags, ipa: safeIpa(data.ipa, data.phrase), words: safeWords(data.words, data.phrase), phrase_es: data.phrase_es||"", ipa_es: safeIpa(data.ipa_es, data.phrase_es), words_es: safeWords(data.words_es, data.phrase_es) };
+      if (normalized.id) {
+        setPhrases(ps => ps.map(p => p.id === normalized.id ? normalized : p));
+        db.upsertPhrase(normalized);
+      } else {
+        const newId  = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+        const newOne = { ...normalized, id: newId, starred: false };
+        setPhrases(ps => [...ps, newOne]);
+        db.upsertPhrase(newOne);
+      }
+      setShowAdd(false); setEditTarget(null); setAddPreset(null);
+    };
+
+    const deletePhrase   = (id) => { setPhrases(ps => ps.filter(p => p.id !== id)); db.deletePhrase(id); };
+    const toggleStar     = (id, e) => { e.stopPropagation(); setPhrases(ps => ps.map(p => { if (p.id !== id) return p; const u = {...p, starred: !p.starred}; db.upsertPhrase(u); return u; })); };
+    const toggleWords    = (id, e) => { e.stopPropagation(); setOpenWords(o => ({...o, [id]:!o[id]})); };
+    const addCategory    = (cat) => { setCategories(cs => [...cs, cat]); db.upsertCategory(cat); };
+    const deleteCategory = (key) => { setCategories(cs => cs.filter(c => c.key !== key)); db.deleteCategory(key); if (activeCategory === key) setCategory("all"); };
+
+    const handleSaveRequest = ({ ja, en, ipa, words, es, ipa_es, words_es }) => {
+      setAddPreset({ phrase:en, meaning:ja, ipa:ipa||"", reading:"", words:Array.isArray(words)?words:[], phrase_es:es||"", ipa_es:ipa_es||"", words_es:Array.isArray(words_es)?words_es:[], category:categories[0]?.key||"shopping", example:"", tags:[], starred:false });
+      setShowAdd(true);
+    };
+
+    const SyncBadge = () => {
+      if (!db.ready)              return <span style={{fontSize:".68rem",color:"rgba(255,255,255,.65)",marginLeft:8}}>💾 ローカル保存</span>;
+      if (syncStatus === "syncing") return <span style={{fontSize:".68rem",color:"rgba(255,255,255,.65)",marginLeft:8}}>⏳ 同期中...</span>;
+      if (syncStatus === "ok")      return <span style={{fontSize:".68rem",color:"#86EFAC",marginLeft:8}}>☁ Supabase 同期済</span>;
+      if (syncStatus === "error")   return <span style={{fontSize:".68rem",color:"#FCA5A5",marginLeft:8}}>⚠ 同期エラー</span>;
+      return null;
+    };
+
+    return (
+      <>
+        {isOffline && <div className="offline-banner">📵 オフライン中 — 保存済みフレーズは閲覧・読み上げ可能です</div>}
+
+        <header className="header">
+          <div className="header-inner">
+            <div className="header-top">
+              <div className="header-icon">☀️</div>
+              <h1>Daily Life Phrase Book <span className="daily-badge">DAILY</span></h1>
+              <button className="settings-btn" onClick={() => setShowSettings(true)} title="設定（APIキー）">⚙</button>
+            </div>
+            <p className="header-sub">アメリカ・ラテン圏の日常会話 — 🇯🇵 🇺🇸 🇪🇸 トリプルマスター版</p>
+            <div className="voice-indicator">
+              {voiceName   && <span>🇺🇸 {voiceName}</span>}
+              {voiceNameEs && <span>🇪🇸 {voiceNameEs}</span>}
+              <SyncBadge />
+            </div>
+          </div>
+        </header>
+
+        <main className="main">
+          <TranslatePanel onSaveRequest={handleSaveRequest} speakingId={speakingId} speak={speak} />
+
+          <div className="toolbar">
+            <div className="search-wrap">
+              <span className="search-icon">🔍</span>
+              <input className="search-input" placeholder="英語・スペイン語・意味・タグで検索..." value={query} onChange={e => setQuery(e.target.value)} />
+            </div>
+            <button className="add-btn" onClick={() => { setAddPreset(null); setShowAdd(true); }}>＋ フレーズ追加</button>
+          </div>
+
+          <div className="filter-row">
+            {allCategories.map(c => {
+              const col      = c.key === "all" ? null : palColor(c.paletteIdx ?? 0);
+              const isActive = activeCategory === c.key;
+              return (
+                <button key={c.key} className={`filter-btn${isActive ? " active" : ""}`}
+                  style={isActive && col ? {background:col.border,borderColor:col.border,color:"#fff"} : {}}
+                  onClick={() => setCategory(c.key)}>
+                  {c.label}
+                  {!c.builtIn && (
+                    <span className="del-cat" onClick={e => { e.stopPropagation(); deleteCategory(c.key); }}>✕</span>
+                  )}
+                </button>
+              );
+            })}
+            <button className="add-cat-btn" onClick={() => setShowAddCat(true)}>＋ カテゴリ追加</button>
+          </div>
+
+          <p className="stats">{filtered.length} フレーズ{query && ` / 「${query}」の検索結果`}</p>
+
+          {filtered.length === 0 ? (
+            <div className="empty">
+              <div className="empty-icon">☀️</div>
+              <p>フレーズがまだありません。<br/>上の翻訳パネルから追加してみましょう！</p>
+            </div>
+          ) : (
+            <div className="card-grid">
+              {filtered.map(p => {
+                const cat = categories.find(c => c.key === p.category);
+                const col = palColor(cat?.paletteIdx ?? 0);
+                const isWordOpen = openWords[p.id];
+                return (
+                  <div key={p.id} className="card" style={{borderTopColor:col.border}} onClick={() => setDetail(p)}>
+                    <div className="card-actions">
+                      <button className="icon-btn" onClick={e => toggleStar(p.id, e)} title={p.starred ? "スターを外す" : "スターを付ける"}>{p.starred ? "⭐" : "☆"}</button>
+                      <button className="icon-btn" onClick={e => { e.stopPropagation(); setEditTarget(p); setShowAdd(true); }} title="編集">✏️</button>
+                      <button className="icon-btn delete" onClick={e => { e.stopPropagation(); deletePhrase(p.id); }} title="削除">🗑</button>
+                    </div>
+                    <span className="card-badge" style={{background:col.bg,color:col.text}}>{cat?.label || p.category}</span>
+                    <p className="card-phrase">{p.phrase}</p>
+                    {p.ipa     && <p className="card-ipa">{p.ipa}</p>}
+                    {p.reading && <p className="card-reading">{p.reading}</p>}
+                    {p.phrase_es && (
+                      <div className="card-es-block">
+                        <p className="card-phrase-es">{p.phrase_es}</p>
+                        {p.ipa_es && <p className="card-ipa-es">{p.ipa_es}</p>}
+                      </div>
+                    )}
+                    {p.meaning && <p className="card-meaning">{p.meaning}</p>}
+                    {(p.tags||[]).length > 0 && <div className="card-tags">{p.tags.map(t => <span key={t} className="tag">{t}</span>)}</div>}
+                    <div className="card-footer">
+                      <div className="card-speak-group">
+                        <button className={`speak-btn${speakingId===`card-en-${p.id}`?" speaking":""}`}
+                          onClick={e => { e.stopPropagation(); speak(p.phrase, `card-en-${p.id}`, "en-US"); }}>
+                          <SpeakerIcon size={12} speaking={speakingId===`card-en-${p.id}`}/> 🇺🇸
+                        </button>
+                        {p.phrase_es && (
+                          <button className={`speak-btn es${speakingId===`card-es-${p.id}`?" speaking":""}`}
+                            onClick={e => { e.stopPropagation(); speak(p.phrase_es, `card-es-${p.id}`, "es-ES"); }}>
+                            <SpeakerIcon size={12} speaking={speakingId===`card-es-${p.id}`}/> 🇪🇸
+                          </button>
+                        )}
+                      </div>
+                      {((p.words||[]).length > 0 || (p.words_es||[]).length > 0) && (
+                        <button className={`word-toggle-btn${isWordOpen?" open":""}`} onClick={e => toggleWords(p.id, e)}>
+                          単語 {isWordOpen ? "▲" : "▼"}
+                        </button>
+                      )}
+                    </div>
+                    {isWordOpen && (
+                      <>
+                        {(p.words||[]).length > 0 && (
+                          <>
+                            <span className="word-breakdown-label en">🇺🇸 EN</span>
+                            <WordChips words={p.words} speakingId={speakingId} speak={speak} phraseId={`en-${p.id}`} lang="en-US" />
+                          </>
+                        )}
+                        {(p.words_es||[]).length > 0 && (
+                          <>
+                            <span className="word-breakdown-label es">🇪🇸 ES</span>
+                            <WordChips words={p.words_es} speakingId={speakingId} speak={speak} phraseId={`es-${p.id}`} lang="es-ES" />
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
+
+        {showAdd && (
+          <PhraseModal
+            phrase={editTarget || addPreset}
+            onSave={savePhrase}
+            onClose={() => { setShowAdd(false); setEditTarget(null); setAddPreset(null); }}
+            categories={categories}
+          />
+        )}
+        {detailTarget && (
+          <DetailModal
+            phrase={detailTarget}
+            onClose={() => setDetail(null)}
+            onEdit={p => { setEditTarget(p); setDetail(null); setShowAdd(true); }}
+            onDelete={deletePhrase}
+            speakingId={speakingId}
+            speak={speak}
+            categories={categories}
+          />
+        )}
+        {showAddCat && (
+          <AddCategoryModal
+            onAdd={addCategory}
+            onClose={() => setShowAddCat(false)}
+            usedIdxs={categories.map(c => c.paletteIdx)}
+          />
+        )}
+        {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      </>
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById("root"));
+  root.render(<App />);
+</script>
+</body>
+</html>
