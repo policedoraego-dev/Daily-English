@@ -167,21 +167,46 @@
     .wc-note { font-size: .62rem; color: var(--gray-400); }
 
     /* ── Modals ── */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
-    .modal { background: var(--white); border-radius: 16px; width: 100%; max-width: 540px; box-shadow: var(--shadow-lg); overflow: hidden; max-height: 92vh; display: flex; flex-direction: column; }
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(15,23,42,.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; padding: 16px;
+      overflow: hidden; /* 背景bodyのスクロール連鎖を遮断 */
+    }
+    .modal {
+      background: var(--white); border-radius: 16px; width: 100%; max-width: 540px;
+      box-shadow: var(--shadow-lg);
+      overflow: clip;             /* border-radiusを維持しつつ内部スクロールをブロックしない */
+      max-height: 92vh;           /* fallback */
+      max-height: 92dvh;          /* dvh = ブラウザUI込みの動的ビューポート高さ */
+      display: flex; flex-direction: column;
+    }
     .modal-sm { max-width: 360px; }
     .modal-header { background: var(--sky); color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
     .modal-header h2 { font-size: 1rem; font-weight: 600; }
     .modal-close { background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; opacity: .8; line-height: 1; }
     .modal-close:hover { opacity: 1; }
-    .modal-body { padding: 20px; overflow-y: auto; }
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch; /* iOSのモメンタムスクロール */
+      overscroll-behavior: contain;      /* スクロールが背景に伝播しない */
+      flex: 1 1 auto;                    /* 余白を全部使う */
+    }
     .form-group { margin-bottom: 14px; }
     label { display: block; font-size: .8rem; font-weight: 600; color: var(--gray-600); margin-bottom: 4px; }
     .form-control { width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: .9rem; outline: none; transition: border-color .15s; font-family: inherit; }
     .form-control:focus { border-color: var(--sky); }
     select.form-control { cursor: pointer; }
     textarea.form-control { resize: vertical; min-height: 70px; }
-    .modal-footer { padding: 12px 20px 20px; display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+    .modal-footer {
+      padding: 12px 20px;
+      /* iOSのホームバー・ツールバーに保存ボタンが隠れないよう余白を確保 */
+      padding-bottom: max(20px, calc(env(safe-area-inset-bottom) + 16px));
+      display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0;
+      border-top: 1px solid var(--gray-200);
+    }
     .btn-cancel { padding: 8px 18px; border: 1.5px solid var(--gray-200); border-radius: 8px; background: var(--white); cursor: pointer; font-size: .88rem; color: var(--gray-600); }
     .btn-cancel:hover { border-color: var(--gray-400); }
     .btn-save { padding: 8px 22px; background: var(--sky); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: .88rem; font-weight: 600; }
@@ -240,8 +265,13 @@
       .translate-body { grid-template-columns: 1fr; }
       .translate-divider { border-left: none; border-right: none; border-top: 1px solid var(--gray-200); border-bottom: 1px solid var(--gray-200); height: 36px; padding: 0; }
       .translate-arrow-icon { transform: rotate(90deg); }
-      .modal { border-radius: 18px 18px 0 0; max-height: 95vh; position: fixed; bottom: 0; left: 0; right: 0; width: 100%; }
-      .modal-overlay { align-items: flex-end; }
+      .modal {
+        border-radius: 18px 18px 0 0;
+        max-height: 85vh;    /* fallback: Safariツールバー分を引いた高さ */
+        max-height: 85dvh;   /* dvh: ブラウザUIを考慮した動的ビューポート */
+        position: fixed; bottom: 0; left: 0; right: 0; width: 100%;
+      }
+      .modal-overlay { align-items: flex-end; padding: 0; }
     }
 
     .offline-banner { background: #7C3AED; color: #fff; text-align: center; font-size: .78rem; padding: 6px 16px; position: sticky; top: 0; z-index: 200; }
@@ -1084,6 +1114,31 @@ Japanese input: "${jaText}"`;
     const [openWords,      setOpenWords]  = useState({});
     const [showAddCat,     setShowAddCat] = useState(false);
     const [showSettings,   setShowSettings] = useState(false);
+
+    /* ── iOS Safariでモーダルを開いた際に背景bodyがスクロールしないようにロック ── */
+    const anyModalOpen = showAdd || !!detailTarget || showAddCat || showSettings;
+    useEffect(() => {
+      if (anyModalOpen) {
+        const scrollY = window.scrollY;
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.top      = `-${scrollY}px`;
+        document.body.style.width    = '100%';
+      } else {
+        const top = document.body.style.top;
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top      = '';
+        document.body.style.width    = '';
+        if (top) window.scrollTo(0, parseInt(top) * -1);
+      }
+      return () => {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top      = '';
+        document.body.style.width    = '';
+      };
+    }, [anyModalOpen]);
 
     useEffect(() => {
       if (!detailTarget) return;
