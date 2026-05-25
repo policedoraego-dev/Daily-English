@@ -177,7 +177,7 @@
     .modal {
       background: var(--white); border-radius: 16px; width: 100%; max-width: 540px;
       box-shadow: var(--shadow-lg);
-      overflow: clip;             /* border-radiusを維持しつつ内部スクロールをブロックしない */
+      overflow: hidden;           /* border-radiusのクリッピング用（iOS互換） */
       max-height: 92vh;           /* fallback */
       max-height: 92dvh;          /* dvh = ブラウザUI込みの動的ビューポート高さ */
       display: flex; flex-direction: column;
@@ -189,10 +189,11 @@
     .modal-close:hover { opacity: 1; }
     .modal-body {
       padding: 20px;
-      overflow-y: auto;
+      overflow-y: scroll;                /* autoよりscrollのほうがiOSで確実 */
       -webkit-overflow-scrolling: touch; /* iOSのモメンタムスクロール */
       overscroll-behavior: contain;      /* スクロールが背景に伝播しない */
-      flex: 1 1 auto;                    /* 余白を全部使う */
+      flex: 1 1 0;                       /* 0ベースにしてflexboxが正確に縮小できるようにする */
+      min-height: 0;                     /* ★必須: flexbox子要素がコンテンツ高さ以下に縮めるようにする */
     }
     .form-group { margin-bottom: 14px; }
     label { display: block; font-size: .8rem; font-weight: 600; color: var(--gray-600); margin-bottom: 4px; }
